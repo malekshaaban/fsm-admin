@@ -37,6 +37,24 @@ export const Sidebar = () => {
                             الإشراف على المراجعات
                         </Link>
                     </li>
+                    <li>
+                        <Link to="/logs" className={`flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] duration-150 ${isActive('/logs') ? 'border-r-4 border-blue-600 bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/50'}`}>
+                            <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive('/logs') ? "'FILL' 1" : "" }}>history</span>
+                            سجل العمليات
+                        </Link>
+                    </li>
+                    <li>
+                        <Link to="/notifications" className={`flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] duration-150 ${isActive('/notifications') ? 'border-r-4 border-blue-600 bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/50'}`}>
+                            <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive('/notifications') ? "'FILL' 1" : "" }}>notifications</span>
+                            سجل الإشعارات
+                        </Link>
+                    </li>
+                    <li>
+                        <Link to="/settings" className={`flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] duration-150 ${isActive('/settings') ? 'border-r-4 border-blue-600 bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/50'}`}>
+                            <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive('/settings') ? "'FILL' 1" : "" }}>settings</span>
+                            إعدادات النظام
+                        </Link>
+                    </li>
                 </ul>
             </div>
             <div className="px-4">

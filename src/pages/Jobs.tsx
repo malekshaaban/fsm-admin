@@ -20,8 +20,26 @@ interface Job {
     isUrgent: boolean;
     skill: string;
     createdAt: string;
+    completedAt: string | null;
+    updatedAt: string;
     customer: JobUser;
     technician: JobUser | null;
+}
+
+interface JobApplication {
+    applicationId: string;
+    status: string; // PENDING, ACCEPTED, REJECTED, CANCELLED
+    comment: string;
+    phoneRevealedAt: string | null;
+    createdAt: string;
+    technician: {
+        userId: string;
+        name: string;
+        surname: string;
+        phoneNo: string;
+        skill: string;
+        city: string;
+    };
 }
 
 export const Jobs = () => {
@@ -38,6 +56,11 @@ export const Jobs = () => {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+    // Applications in Drawer
+    const [applications, setApplications] = useState<JobApplication[]>([]);
+    const [isAppsLoading, setIsAppsLoading] = useState(false);
+    const [appsError, setAppsError] = useState<string | null>(null);
+
     // Fetch Jobs whenever the status filter changes
     useEffect(() => {
         const fetchJobs = async () => {
@@ -48,7 +71,7 @@ export const Jobs = () => {
                 
                 // Spring Boot Pagination Object
                 const rawJobs = response.data.content || response.data;
-                setJobs(rawUsers => rawJobs); 
+                setJobs(rawJobs);
                 setError(null);
             } catch (err) {
                 console.error("Failed to fetch jobs:", err);
@@ -60,6 +83,29 @@ export const Jobs = () => {
 
         fetchJobs();
     }, [statusFilter]);
+
+    // Fetch applications for the selected job when it changes/opens
+    useEffect(() => {
+        if (!selectedJob) {
+            return;
+        }
+
+        const fetchApplications = async () => {
+            setIsAppsLoading(true);
+            setAppsError(null);
+            try {
+                const response = await api.get(`/applications/job/${selectedJob.jobId}`);
+                setApplications(response.data);
+            } catch (err) {
+                console.error("Failed to fetch applications:", err);
+                setAppsError("فشل في تحميل طلبات التقديم لهذه الوظيفة.");
+            } finally {
+                setIsAppsLoading(false);
+            }
+        };
+
+        fetchApplications();
+    }, [selectedJob]);
 
     // Handle Force Cancelling a Job
     const handleCancelJob = async () => {
@@ -81,8 +127,9 @@ export const Jobs = () => {
             }
             
             setCancelModalJobId(null); // Close modal
-        } catch (err: any) {
-            if (err.response && err.response.status === 400) {
+        } catch (err) {
+            const errorObj = err as { response?: { status?: number } };
+            if (errorObj.response && errorObj.response.status === 400) {
                 setError("لا يمكن إلغاء هذه الوظيفة في حالتها الحالية (قد تكون مكتملة أو ملغاة بالفعل).");
             } else {
                 setError("حدث خطأ أثناء محاولة إلغاء الوظيفة.");
@@ -95,6 +142,7 @@ export const Jobs = () => {
 
     // Open the details drawer
     const handleViewJob = (job: Job) => {
+        setApplications([]); // Clear applications synchronously before setting selected job
         setSelectedJob(job);
         setIsDrawerOpen(true);
     };
@@ -126,6 +174,46 @@ export const Jobs = () => {
 
     const formatDate = (dateString: string) => {
         return new Intl.DateTimeFormat('ar-SY', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(dateString));
+    };
+
+    const translateAppStatus = (status: string) => {
+        switch (status) {
+            case 'PENDING': return 'قيد الانتظار';
+            case 'ACCEPTED': return 'مقبول';
+            case 'REJECTED': return 'مرفوض';
+            case 'CANCELLED': return 'ملغى';
+            default: return status;
+        }
+    };
+
+    const getAppStatusColor = (status: string) => {
+        switch (status) {
+            case 'PENDING': return 'bg-amber-100 text-amber-800 border border-amber-200';
+            case 'ACCEPTED': return 'bg-green-100 text-green-800 border border-green-200';
+            case 'REJECTED': return 'bg-red-100 text-red-800 border border-red-200';
+            case 'CANCELLED': return 'bg-gray-100 text-gray-800 border border-gray-200';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getDuration = (start: string, end: string | null) => {
+        if (!end) return 'غير مكتمل بعد';
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const diffMs = endDate.getTime() - startDate.getTime();
+        
+        if (diffMs < 0) return 'غير صالح';
+
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        let durationStr = '';
+        if (diffDays > 0) durationStr += `${diffDays} يوم `;
+        if (diffHours > 0) durationStr += `${diffHours} ساعة `;
+        if (diffMinutes > 0 || durationStr === '') durationStr += `${diffMinutes} دقيقة`;
+        
+        return durationStr.trim();
     };
 
     return (
@@ -294,10 +382,24 @@ export const Jobs = () => {
                             {/* Job Info Grid */}
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
-                                    <label className="font-label-sm text-on-surface-variant">تاريخ الإنشاء</label>
+                                    <label className="font-label-sm text-on-surface-variant">تاريخ الإنشاء (البدء)</label>
                                     <p className="font-body-md text-on-surface mt-1 flex items-center gap-2">
                                         <span className="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
                                         {formatDate(selectedJob.createdAt)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="font-label-sm text-on-surface-variant">تاريخ الانتهاء</label>
+                                    <p className="font-body-md text-on-surface mt-1 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[18px] text-success">event_available</span>
+                                        {selectedJob.completedAt ? formatDate(selectedJob.completedAt) : '---'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="font-label-sm text-on-surface-variant">المدة المستغرقة</label>
+                                    <p className="font-body-md text-on-surface mt-1 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[18px] text-tertiary">timer</span>
+                                        {getDuration(selectedJob.createdAt, selectedJob.completedAt)}
                                     </p>
                                 </div>
                                 <div>
@@ -356,6 +458,72 @@ export const Jobs = () => {
                                     <div className="border border-outline-variant border-dashed rounded-lg p-4 flex items-center justify-center gap-2 text-on-surface-variant">
                                         <span className="material-symbols-outlined">person_search</span>
                                         <span className="font-body-sm">لم يتم تعيين فني بعد</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="w-full h-px bg-outline-variant/50"></div>
+
+                            {/* Job Applications Section */}
+                            <div>
+                                <h4 className="font-h3 text-h3 text-on-surface mb-4">طلبات التقديم للوظيفة</h4>
+                                
+                                {isAppsLoading ? (
+                                    <div className="flex items-center justify-center py-6 text-primary">
+                                        <span className="material-symbols-outlined animate-spin mr-2">refresh</span>
+                                        <span className="font-body-sm">جاري تحميل طلبات التقديم...</span>
+                                    </div>
+                                ) : appsError ? (
+                                    <div className="p-4 bg-error-container text-error rounded-lg font-body-sm flex items-center gap-2">
+                                        <span className="material-symbols-outlined">error</span>
+                                        {appsError}
+                                    </div>
+                                ) : applications.length === 0 ? (
+                                    <div className="border border-dashed border-outline-variant rounded-lg p-6 text-center text-on-surface-variant font-body-sm">
+                                        لا توجد طلبات تقديم لهذه الوظيفة حالياً.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {applications.map((app) => (
+                                            <div key={app.applicationId} className="border border-outline-variant rounded-lg p-4 bg-surface hover:bg-surface-container-low transition-colors space-y-3">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-full bg-primary-container text-primary flex items-center justify-center font-bold text-sm">
+                                                            {app.technician ? app.technician.name.charAt(0) : '?'}
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="font-body-md font-bold text-on-surface">
+                                                                {app.technician ? `${app.technician.name} ${app.technician.surname}` : 'فني غير معروف'}
+                                                            </h5>
+                                                            <p className="font-body-sm text-on-surface-variant mt-0.5">
+                                                                {app.technician?.skill || 'فني'} • {app.technician?.city || 'دمشق'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getAppStatusColor(app.status)}`}>
+                                                        {translateAppStatus(app.status)}
+                                                    </span>
+                                                </div>
+
+                                                {app.comment && (
+                                                    <div className="text-body-sm text-on-surface-variant bg-surface-container-low p-2.5 rounded border border-outline-variant/30 italic">
+                                                        "{app.comment}"
+                                                    </div>
+                                                )}
+
+                                                <div className="flex flex-wrap items-center justify-between text-body-sm text-on-surface-variant pt-1 border-t border-outline-variant/20">
+                                                    <span className="flex items-center gap-1 font-mono text-xs" dir="ltr">
+                                                        <span className="material-symbols-outlined text-[16px]">phone</span>
+                                                        {app.technician?.phoneNo || '********'}
+                                                    </span>
+                                                    <span className="flex items-center gap-1 font-mono text-xs">
+                                                        <span className="material-symbols-outlined text-[16px]">schedule</span>
+                                                        {formatDate(app.createdAt)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
