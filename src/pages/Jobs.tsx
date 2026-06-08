@@ -267,7 +267,7 @@ export const Jobs = () => {
                             <span className="material-symbols-outlined text-sm text-on-surface-variant mr-1">search</span>
                             <input
                                 type="text"
-                                placeholder="بحث باسم العميل..."
+                                placeholder="بحث بالاسم أو العنوان..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full bg-transparent border-none focus:ring-0 outline-none text-sm text-on-surface mr-2 placeholder:text-on-surface-variant"
