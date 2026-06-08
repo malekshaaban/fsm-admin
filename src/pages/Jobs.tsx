@@ -51,6 +51,13 @@ export const Jobs = () => {
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+
+    useEffect(() => {
+        setPage(0);
+    }, [statusFilter, debouncedSearch]);
 
     useEffect(() => {
         const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
@@ -73,7 +80,7 @@ export const Jobs = () => {
         const fetchJobs = async () => {
             setIsLoading(true);
             try {
-                let endpoint = '/admin/jobs?';
+                let endpoint = `/admin/jobs?page=${page}&size=10&`;
                 if (statusFilter) endpoint += `status=${statusFilter}&`;
                 if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
                 
@@ -81,6 +88,17 @@ export const Jobs = () => {
                 
                 // Spring Boot Pagination Object
                 const rawJobs = response.data.content || response.data;
+                const data = response.data;
+                if (data.page && data.page.totalPages !== undefined) {
+                    setTotalPages(data.page.totalPages);
+                    setTotalElements(data.page.totalElements);
+                } else if (data.totalPages !== undefined) {
+                    setTotalPages(data.totalPages);
+                    setTotalElements(data.totalElements);
+                } else {
+                    setTotalPages(1);
+                    setTotalElements(Array.isArray(rawJobs) ? rawJobs.length : 0);
+                }
                 setJobs(rawJobs);
                 setError(null);
             } catch (err) {
@@ -92,7 +110,7 @@ export const Jobs = () => {
         };
 
         fetchJobs();
-    }, [statusFilter, debouncedSearch]);
+    }, [statusFilter, debouncedSearch, page]);
 
     // Fetch applications for the selected job when it changes/opens
     useEffect(() => {
@@ -274,7 +292,7 @@ export const Jobs = () => {
                             />
                         </div>
                         
-                        <span className="font-body-sm text-body-sm text-on-surface-variant">العدد: {jobs.length}</span>
+                        <span className="font-body-sm text-body-sm text-on-surface-variant">العدد: {totalElements}</span>
                     </div>
 
                 </div>
@@ -347,6 +365,31 @@ export const Jobs = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                <div className="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-lowest">
+                    <div className="font-body-sm text-on-surface-variant">
+                        إجمالي العناصر: {totalElements}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            disabled={page === 0 || isLoading}
+                            onClick={() => setPage(p => p - 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                        <span className="font-label-md text-on-surface px-4">
+                            صفحة {page + 1} من {totalPages || 1}
+                        </span>
+                        <button 
+                            disabled={page >= totalPages - 1 || isLoading}
+                            onClick={() => setPage(p => p + 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

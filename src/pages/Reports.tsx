@@ -51,9 +51,19 @@ export const Reports = () => {
             const url = `/admin/reports?page=${currentPage}&size=${pageSize}${statusFilter ? `&status=${statusFilter}` : ''}`;
             const response = await api.get(url);
             const data = response.data;
-            setReports(data.content || []);
-            setTotalPages(data.totalPages || 0);
-            setTotalElements(data.totalElements || 0);
+            const content = data.content || data;
+            setReports(Array.isArray(content) ? content : []);
+            
+            if (data.page && data.page.totalPages !== undefined) {
+                setTotalPages(data.page.totalPages);
+                setTotalElements(data.page.totalElements);
+            } else if (data.totalPages !== undefined) {
+                setTotalPages(data.totalPages);
+                setTotalElements(data.totalElements);
+            } else {
+                setTotalPages(1);
+                setTotalElements(Array.isArray(content) ? content.length : 0);
+            }
             setError(null);
         } catch (err) {
             console.error("Failed to fetch reports:", err);
@@ -307,29 +317,30 @@ export const Reports = () => {
                 </div>
 
                 {/* Pagination Controls */}
-                {totalPages > 1 && (
-                    <div className="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-low/40">
-                        <span className="font-body-sm text-on-surface-variant">
-                            الصفحة {currentPage + 1} من {totalPages}
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))} 
-                                disabled={currentPage === 0} 
-                                className="p-2 border border-outline-variant rounded-lg bg-surface text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center"
-                            >
-                                <span className="material-symbols-outlined">chevron_right</span>
-                            </button>
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))} 
-                                disabled={currentPage === totalPages - 1} 
-                                className="p-2 border border-outline-variant rounded-lg bg-surface text-on-surface hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center"
-                            >
-                                <span className="material-symbols-outlined">chevron_left</span>
-                            </button>
-                        </div>
+                <div className="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-lowest">
+                    <div className="font-body-sm text-on-surface-variant">
+                        إجمالي العناصر: {totalElements}
                     </div>
-                )}
+                    <div className="flex items-center gap-2">
+                        <button 
+                            disabled={currentPage === 0 || isLoading}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                        <span className="font-label-md text-on-surface px-4">
+                            صفحة {currentPage + 1} من {totalPages || 1}
+                        </span>
+                        <button 
+                            disabled={currentPage >= totalPages - 1 || isLoading}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {/* DETAIL SLIDE-OUT DRAWER */}

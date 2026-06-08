@@ -37,6 +37,13 @@ export const Users = () => {
     const [roleFilter, setRoleFilter] = useState<string>(''); 
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+
+    useEffect(() => {
+        setPage(0);
+    }, [roleFilter, debouncedSearch]);
 
     useEffect(() => {
         const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
@@ -64,12 +71,23 @@ export const Users = () => {
         const fetchUsers = async () => {
             setIsLoading(true);
             try {
-                let endpoint = '/admin/users?';
+                let endpoint = `/admin/users?page=${page}&size=10&`;
                 if (roleFilter) endpoint += `role=${roleFilter}&`;
                 if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
                 
                 const response = await api.get(endpoint);
                 const rawUsers = response.data.content || response.data; 
+                const data = response.data;
+                if (data.page && data.page.totalPages !== undefined) {
+                    setTotalPages(data.page.totalPages);
+                    setTotalElements(data.page.totalElements);
+                } else if (data.totalPages !== undefined) {
+                    setTotalPages(data.totalPages);
+                    setTotalElements(data.totalElements);
+                } else {
+                    setTotalPages(1);
+                    setTotalElements(Array.isArray(rawUsers) ? rawUsers.length : 0);
+                }
 
                 const mappedUsers = rawUsers.map((user: any) => {
                     let translatedRole = 'عميل';
@@ -104,7 +122,7 @@ export const Users = () => {
         };
 
         fetchUsers();
-    }, [roleFilter, debouncedSearch]); 
+    }, [roleFilter, debouncedSearch, page]); 
 
     const handleToggleStatus = async (userId: string, currentStatus: string) => {
         setOpenMenuId(null);
@@ -279,7 +297,7 @@ export const Users = () => {
                             />
                         </div>
                         
-                        <span className="font-body-sm text-body-sm text-on-surface-variant">إجمالي المستخدمين: {users.length}</span>
+                        <span className="font-body-sm text-body-sm text-on-surface-variant">إجمالي المستخدمين: {totalElements}</span>
                     </div>
                 </div>
 
@@ -375,6 +393,31 @@ export const Users = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                <div className="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-lowest">
+                    <div className="font-body-sm text-on-surface-variant">
+                        إجمالي العناصر: {totalElements}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            disabled={page === 0 || isLoading}
+                            onClick={() => setPage(p => p - 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                        </button>
+                        <span className="font-label-md text-on-surface px-4">
+                            صفحة {page + 1} من {totalPages || 1}
+                        </span>
+                        <button 
+                            disabled={page >= totalPages - 1 || isLoading}
+                            onClick={() => setPage(p => p + 1)}
+                            className="p-2 border border-outline-variant rounded-md disabled:opacity-50 hover:bg-surface-container-low transition-colors text-on-surface flex items-center justify-center cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
