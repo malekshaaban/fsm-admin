@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 
-// This sets a base URL so you don't have to type "http://localhost:8080/api/v1" every time.
+
 const api = axios.create({
-   baseURL: 'http://localhost:8080/api/v1', // Update  port is different
+  baseURL: 'http://localhost:8080/api/v1', // Update  port is different
  //baseURL: 'https://fsm-backend-8bxb.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',

@@ -49,6 +49,13 @@ export const Jobs = () => {
     
     // Filters and Modals
     const [statusFilter, setStatusFilter] = useState<string>('');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
     const [cancelModalJobId, setCancelModalJobId] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     
@@ -66,7 +73,10 @@ export const Jobs = () => {
         const fetchJobs = async () => {
             setIsLoading(true);
             try {
-                const endpoint = statusFilter ? `/admin/jobs?status=${statusFilter}` : '/admin/jobs';
+                let endpoint = '/admin/jobs?';
+                if (statusFilter) endpoint += `status=${statusFilter}&`;
+                if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
+                
                 const response = await api.get(endpoint);
                 
                 // Spring Boot Pagination Object
@@ -82,7 +92,7 @@ export const Jobs = () => {
         };
 
         fetchJobs();
-    }, [statusFilter]);
+    }, [statusFilter, debouncedSearch]);
 
     // Fetch applications for the selected job when it changes/opens
     useEffect(() => {
@@ -252,6 +262,18 @@ export const Jobs = () => {
                                 <option value="CANCELLED">ملغاة</option>
                             </select>
                         </div>
+                        
+                        <div className="relative flex items-center border border-outline-variant rounded-lg bg-surface px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all w-64">
+                            <span className="material-symbols-outlined text-sm text-on-surface-variant mr-1">search</span>
+                            <input
+                                type="text"
+                                placeholder="بحث باسم العميل..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-transparent border-none focus:ring-0 outline-none text-sm text-on-surface mr-2 placeholder:text-on-surface-variant"
+                            />
+                        </div>
+                        
                         <span className="font-body-sm text-body-sm text-on-surface-variant">العدد: {jobs.length}</span>
                     </div>
 
@@ -270,7 +292,7 @@ export const Jobs = () => {
                     <table className="w-full text-right border-collapse">
                         <thead>
                             <tr className="bg-surface-container-low border-b border-outline-variant">
-                                <th className="py-4 px-6 font-label-sm text-on-surface-variant uppercase tracking-wider">رقم الوظيفة</th>
+                                <th className="py-4 px-6 font-label-sm text-on-surface-variant uppercase tracking-wider">عنوان الوظيفة</th>
                                 <th className="py-4 px-6 font-label-sm text-on-surface-variant uppercase tracking-wider">العميل</th>
                                 <th className="py-4 px-6 font-label-sm text-on-surface-variant uppercase tracking-wider">الفني</th>
                                 <th className="py-4 px-6 font-label-sm text-on-surface-variant uppercase tracking-wider">الحالة</th>
@@ -282,7 +304,7 @@ export const Jobs = () => {
                                 <tr key={job.jobId} className="border-b border-outline-variant hover:bg-primary-container/5 transition-colors">
                                     <td className="py-4 px-6 font-medium text-sm">
                                         {/* Show short ID, hover for full ID */}
-                                        <span title={job.jobId} className="cursor-help">...{job.jobId.slice(-6).toUpperCase()}</span>
+                                        <span title={job.title} className="cursor-help">{job.title}</span>
                                         {job.isUrgent && <span className="mr-2 text-error text-xs font-bold bg-error-container px-2 py-0.5 rounded">عاجل</span>}
                                     </td>
                                     <td className="py-4 px-6 font-body-md">

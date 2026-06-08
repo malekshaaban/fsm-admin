@@ -38,6 +38,12 @@ export const Sidebar = () => {
                         </Link>
                     </li>
                     <li>
+                        <Link to="/reports" className={`flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] duration-150 ${isActive('/reports') ? 'border-r-4 border-blue-600 bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/50'}`}>
+                            <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive('/reports') ? "'FILL' 1" : "" }}>flag</span>
+                            البلاغات
+                        </Link>
+                    </li>
+                    <li>
                         <Link to="/logs" className={`flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] duration-150 ${isActive('/logs') ? 'border-r-4 border-blue-600 bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/50'}`}>
                             <span className="material-symbols-outlined" style={{ fontVariationSettings: isActive('/logs') ? "'FILL' 1" : "" }}>history</span>
                             سجل العمليات

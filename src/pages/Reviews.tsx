@@ -29,6 +29,14 @@ export const Reviews = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
+
     // Deletion Modal State
     const [deleteModalReviewId, setDeleteModalReviewId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -37,7 +45,11 @@ export const Reviews = () => {
     useEffect(() => {
         const fetchReviews = async () => {
             try {
-                const response = await api.get('/admin/reviews');
+                let endpoint = '/admin/reviews';
+                if (debouncedSearch) {
+                    endpoint += `?search=${encodeURIComponent(debouncedSearch)}`;
+                }
+                const response = await api.get(endpoint);
                 // Extract the array from the Spring Boot Page object
                 const rawReviews = response.data.content || response.data;
                 setReviews(rawReviews);
@@ -50,7 +62,7 @@ export const Reviews = () => {
         };
 
         fetchReviews();
-    }, []);
+    }, [debouncedSearch]);
 
     // Handle Permanent Deletion
     const handleDeleteReview = async () => {
@@ -104,8 +116,18 @@ export const Reviews = () => {
                     <h2 className="font-h1 text-h1 text-on-surface">أحدث التقييمات</h2>
                     <p className="font-body-md text-body-md text-on-surface-variant mt-2">مراقبة وإدارة تعليقات العملاء عبر جميع مهام الخدمة المكتملة.</p>
                 </div>
-                <div className="flex gap-3">
-                    <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors shadow-sm cursor-pointer">
+                <div className="flex items-center gap-3">
+                    <div className="relative flex items-center border border-outline-variant rounded-lg bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all w-72">
+                        <span className="material-symbols-outlined text-sm text-on-surface-variant mr-1">search</span>
+                        <input
+                            type="text"
+                            placeholder="بحث باسم العميل أو الفني..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-transparent border-none focus:ring-0 outline-none text-sm text-on-surface mr-2 placeholder:text-on-surface-variant"
+                        />
+                    </div>
+                    <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-4 py-2 h-[42px] bg-surface-container-lowest border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors shadow-sm cursor-pointer">
                         <span className={`material-symbols-outlined text-[18px] ${isLoading ? 'animate-spin' : ''}`}>refresh</span>
                         تحديث
                     </button>

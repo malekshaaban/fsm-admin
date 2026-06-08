@@ -18,10 +18,7 @@ export const TopBar = ({ title }: TopBarProps) => {
             <div className="flex items-center gap-6 w-full justify-between">
                 <div className="flex items-center gap-4">
                     <span className="text-xl font-black text-slate-900 dark:text-white">{title}</span>
-                    <div className="relative mr-8 hidden md:block">
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                        <input className="pr-10 pl-4 py-1.5 bg-slate-100 dark:bg-slate-800 border-transparent rounded-full text-sm focus:border-primary-container focus:ring-0 w-64 text-on-surface dark:text-white" placeholder="البحث..." type="text" />
-                    </div>
+                    
                 </div>
                 <div className="flex items-center gap-2">
                     <button className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer transition-all active:opacity-70">

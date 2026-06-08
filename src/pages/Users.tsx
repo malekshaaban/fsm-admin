@@ -35,6 +35,13 @@ export const Users = () => {
     const [error, setError] = useState<string | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [roleFilter, setRoleFilter] = useState<string>(''); 
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
     
     const [roleModalUserId, setRoleModalUserId] = useState<string | null>(null);
     const [newSelectedRole, setNewSelectedRole] = useState<string>('CUSTOMER');
@@ -57,7 +64,10 @@ export const Users = () => {
         const fetchUsers = async () => {
             setIsLoading(true);
             try {
-                const endpoint = roleFilter ? `/admin/users?role=${roleFilter}` : '/admin/users';
+                let endpoint = '/admin/users?';
+                if (roleFilter) endpoint += `role=${roleFilter}&`;
+                if (debouncedSearch) endpoint += `search=${encodeURIComponent(debouncedSearch)}&`;
+                
                 const response = await api.get(endpoint);
                 const rawUsers = response.data.content || response.data; 
 
@@ -94,7 +104,7 @@ export const Users = () => {
         };
 
         fetchUsers();
-    }, [roleFilter]); 
+    }, [roleFilter, debouncedSearch]); 
 
     const handleToggleStatus = async (userId: string, currentStatus: string) => {
         setOpenMenuId(null);
@@ -257,6 +267,18 @@ export const Users = () => {
                                 <option value="CUSTOMER">عملاء</option>
                             </select>
                         </div>
+                        
+                        <div className="relative flex items-center border border-outline-variant rounded-lg bg-surface px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all w-64">
+                            <span className="material-symbols-outlined text-sm text-on-surface-variant mr-1">search</span>
+                            <input
+                                type="text"
+                                placeholder="بحث بالاسم أو الرقم..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-transparent border-none focus:ring-0 outline-none text-sm text-on-surface mr-2 placeholder:text-on-surface-variant"
+                            />
+                        </div>
+                        
                         <span className="font-body-sm text-body-sm text-on-surface-variant">إجمالي المستخدمين: {users.length}</span>
                     </div>
                 </div>

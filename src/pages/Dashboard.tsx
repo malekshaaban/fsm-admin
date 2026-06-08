@@ -15,6 +15,7 @@ interface DashboardStats {
     cancelledJobs: number;
     totalReviews: number;
     averageRating: number;
+    pendingReportsCount: number;
 }
 
 export const Dashboard = () => {
@@ -58,7 +59,8 @@ export const Dashboard = () => {
             ['وظائف مكتملة', stats.completedJobs],
             ['وظائف ملغاة', stats.cancelledJobs],
             ['إجمالي التقييمات', stats.totalReviews],
-            ['متوسط التقييم', stats.averageRating.toFixed(1)]
+            ['متوسط التقييم', stats.averageRating.toFixed(1)],
+            ['بلاغات معلقة', stats.pendingReportsCount]
         ];
 
         // 2. Convert the array to a CSV string. 
@@ -212,6 +214,24 @@ export const Dashboard = () => {
                                     {stats.averageRating.toFixed(1)}
                                     <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                                 </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Pending Reports Card */}
+                    <div className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant shadow-sm flex flex-col hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                <span className="material-symbols-outlined text-[24px]">flag</span>
+                            </div>
+                        </div>
+                        <h3 className="font-body-md text-body-md text-on-surface-variant mb-1">بلاغات معلقة</h3>
+                        <div className="flex items-baseline gap-2">
+                            <span className="font-h1 text-4xl font-bold text-on-surface">{stats.pendingReportsCount}</span>
+                        </div>
+                        <div className="mt-4 flex flex-col gap-1 border-t border-outline-variant/50 pt-3">
+                            <div className="flex justify-between text-sm items-center">
+                                <span className="text-on-surface-variant">بانتظار المراجعة</span>
                             </div>
                         </div>
                     </div>
